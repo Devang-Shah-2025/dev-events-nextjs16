@@ -117,9 +117,9 @@ const EventSchema = new Schema<IEvent>(
 
 /**
  * Pre-save hook: Generate slug from title and normalize date/time
- * Only regenerates slug if title has been modified
+ * Only regenerates slug if title has been modified. Throws on invalid data.
  */
-EventSchema.pre('save', function (next: any) {
+EventSchema.pre('save', function () {
   // Generate slug from title only if title is new or modified
   if (this.isModified('title')) {
     this.slug = this.title
@@ -136,15 +136,16 @@ EventSchema.pre('save', function (next: any) {
     const parsedDate = new Date(this.date);
     if (!isNaN(parsedDate.getTime())) {
       this.date = parsedDate.toISOString().split('T')[0];
+    } else {
+      // Invalid date string — throw to abort save
+      throw new Error('Invalid date format. Expected a valid date string.');
     }
   }
 
-  // Normalize time format to HH:MM (24-hour format)
+  // Normalize time format to HH:MM (24-hour-ish format); trim whitespace
   if (this.isModified('time')) {
     this.time = this.time.trim();
   }
-
-  next();
 });
 
 // Create unique index on slug for faster lookups
