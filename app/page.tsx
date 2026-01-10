@@ -2,7 +2,6 @@
 import EventCard from '@/components/EventCard'
 import ExploreBtn from '@/components/ExploreBtn'
 import React from 'react'
-import { events } from '@/lib/constants'
 import { IEvent } from '@/database';
 import { cacheLife } from 'next/cache';
 import events from '@/lib/constants';
@@ -26,7 +25,7 @@ const Page = async () => {
 
         <ul className='events'>
           {events && events.length > 0 && events.map((event: IEvent)=>(
-              <li key={event.title}>
+              <li key={event.title} className='list-none'>
                   <EventCard {... event} />
               </li>
           ))}
