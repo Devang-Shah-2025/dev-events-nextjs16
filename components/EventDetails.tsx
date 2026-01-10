@@ -7,7 +7,16 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { cacheLife } from 'next/cache';
 
-const BASE_URL= process.env.NEXT_PUBLIC_BASE_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+// Ensure BASE_URL has proper protocol
+const getBaseURL = () => {
+  if (BASE_URL.startsWith('http://') || BASE_URL.startsWith('https://')) {
+    return BASE_URL;
+  }
+  // Add https for production URLs, http for localhost
+  return BASE_URL.includes('localhost') ? `http://${BASE_URL}` : `https://${BASE_URL}`;
+};
 
 const EventDetailItem= ({icon, alt, label}:{icon:string; alt:string; label:string})=> (
   <div className='flex flex-row gap-2 items-center'>
@@ -41,18 +50,30 @@ const EventDetails = async ({ params }: { params:Promise<string> }) => {
   cacheLife('hours');
   const  slug  = await params;
 
-    const request = await fetch(`${BASE_URL}/api/events/${slug}`);
-  const data = await request.json();
-  const { event } = data;
+  try {
+    const request = await fetch(`${getBaseURL()}/api/events/${slug}`);
+    
+    if (!request.ok) {
+      console.error('Failed to fetch event:', request.status, request.statusText);
+      return notFound();
+    }
+    
+    const data = await request.json();
+    const { event } = data;
 
-  if (!event || !event.description) return notFound();
-  const { description, image, overview, date, time, location, mode, agenda, audience, organizer, tags } = event;
+    if (!event || !event.description) return notFound();
+    const { description, image, overview, date, time, location, mode, agenda, audience, organizer, tags } = event;
 
-  const bookings= 10;
+    const bookings= 10;
 
-  const similarEvents: IEvent[]= await getSimilarEventsBySlug(slug);
+    let similarEvents: IEvent[] = [];
+    try {
+      similarEvents = await getSimilarEventsBySlug(slug);
+    } catch (e) {
+      console.error('Failed to fetch similar events:', e);
+    }
 
-  console.log(similarEvents);
+    console.log(similarEvents);
   return (
     <section id='event'>
       <div className='header'>
@@ -114,7 +135,11 @@ const EventDetails = async ({ params }: { params:Promise<string> }) => {
 
       </div>
     </section>
-  )
+  );
+  } catch (error) {
+    console.error('Error loading event details:', error);
+    return notFound();
+  }
 }
 
 export default EventDetails

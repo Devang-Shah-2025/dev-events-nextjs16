@@ -1,6 +1,7 @@
 import Event from '@/database/event.model';
 import connectToDatabase from '@/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
+import { events as fallbackEvents } from '@/lib/constants';
 
 /**
  * Context type for dynamic route params in Next.js App Router
@@ -35,6 +36,24 @@ export async function GET(
           error: 'Slug must be a non-empty string' 
         },
         { status: 400 }
+      );
+    }
+
+    // Check if MONGODB_URI exists
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      console.error('MONGODB_URI not set, using fallback data');
+      // Try to find event in fallback data
+      const fallbackEvent = fallbackEvents.find(e => e.slug === slug.toLowerCase().trim());
+      if (fallbackEvent) {
+        return NextResponse.json(
+          { message: 'Event retrieved from fallback', event: fallbackEvent },
+          { status: 200 }
+        );
+      }
+      return NextResponse.json(
+        { message: 'Event not found', error: `No event found with slug: ${slug}` },
+        { status: 404 }
       );
     }
 
