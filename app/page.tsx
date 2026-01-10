@@ -5,12 +5,21 @@ import React from 'react'
 import { IEvent } from '@/database';
 import { cacheLife } from 'next/cache';
 
-const BASE_URL= process.env.NEXT_PUBLIC_BASE_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+// Ensure BASE_URL has proper protocol
+const getBaseURL = () => {
+  if (BASE_URL.startsWith('http://') || BASE_URL.startsWith('https://')) {
+    return BASE_URL;
+  }
+  // Add https for production URLs, http for localhost
+  return BASE_URL.includes('localhost') ? `http://${BASE_URL}` : `https://${BASE_URL}`;
+};
 
 const Page = async () => {
   'use cache';
   cacheLife('hours');
-    const response= await fetch(`${BASE_URL}/api/events`, {cache: 'no-store'});
+    const response= await fetch(`${getBaseURL()}/api/events`, {cache: 'no-store'});
     const {events}= await response.json();
   return (
     <section>
