@@ -148,9 +148,6 @@ EventSchema.pre('save', function () {
   }
 });
 
-// Create unique index on slug for faster lookups
-EventSchema.index({ slug: 1 });
-
 /**
  * Export Event model
  * Uses models cache to prevent model recompilation in development

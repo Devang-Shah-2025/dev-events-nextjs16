@@ -3,6 +3,7 @@ import Event from "@/database/event.model";
 import connectToDatabase from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import { v2 as cloudinary} from 'cloudinary';
+import { events as fallbackEvents } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
     try{
@@ -58,12 +59,30 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
     try{
+        // Check if MONGODB_URI exists before trying to connect
+        const mongoUri = process.env.MONGODB_URI;
+        if (!mongoUri) {
+            console.error('MONGODB_URI environment variable is not set');
+            console.log('Using fallback events data');
+            return NextResponse.json({
+                message: 'Events loaded from fallback data', 
+                events: fallbackEvents
+            }, {status: 200});
+        }
+
         await connectToDatabase();
         const events = await Event.find().sort({ createdAt: -1 });
 
         return NextResponse.json({message: 'Events Fetched Successfully', events}, {status: 200});
     }catch(e){
-        return NextResponse.json({message: 'Event Fetching Failed', error: e instanceof Error ? e.message : 'Unknown'}, {status: 500});
+        console.error('Database error:', e);
+        console.log('Using fallback events data');
+        // Return fallback events instead of empty array
+        return NextResponse.json({
+            message: 'Events loaded from fallback data', 
+            events: fallbackEvents,
+            error: e instanceof Error ? e.message : 'Unknown database error'
+        }, {status: 200});
     }
 }
 
